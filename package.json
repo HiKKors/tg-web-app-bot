@@ -1,0 +1,16 @@
+{
+  "name": "echo_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index_telegraf.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index_telegraf.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "telegraf": "^4.8.5"
+  }
+}
