@@ -1,7 +1,10 @@
 import { Telegraf, Markup } from 'telegraf'
 import { message } from 'telegraf/filters'
+import { db, User } from './db.js';
 
 
+// импорт базы данных
+// const User = require('./db').User;
 
 const token = '6839956141:AAEHaAlbHk-m5VFPFkrJDXflekn5AHR6inM'
 const webAppUrl = 'https://vk.com/'
@@ -22,6 +25,25 @@ bot.command('start', (ctx) => {
       Markup.button.webApp('Отправить сообщение', `${webAppUrl}/feedback`),
     ])
   )
+})
+
+bot.command('register',async (ctx) => {
+  const { id, first_name, last_name, username } = ctx.from;
+    
+  const userData = {
+    first_name: first_name || '',
+    last_name: last_name || '',
+    username: username || '',
+    status: 'user'
+  };
+  User.create_user(userData, (err) => {
+    if (err) {
+        console.error(err);
+        ctx.reply('Произошла ошибка при регистрации пользователя.');
+    } else {
+        ctx.reply('Вы успешно зарегистрированы!');
+    }
+  })
 })
 
 bot.command('test', async (ctx) => {
