@@ -11,6 +11,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "mysql": "^2.18.1",
+    "node-readability": "^3.0.0",
+    "sqlite3": "^5.1.7",
     "telegraf": "^4.8.5"
   }
 }
