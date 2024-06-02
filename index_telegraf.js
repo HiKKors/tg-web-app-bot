@@ -42,14 +42,18 @@ bot.command('register',async (ctx) => {
     username: username || '',
     status: 'user'
   };
-  User.create_user(userData, (err) => {
+  User.create_user(userData, (err, result) => {
     if (err) {
-        console.error(err);
-        ctx.reply('Произошла ошибка при регистрации пользователя.');
+      console.error(err);
+      ctx.reply('Произошла ошибка при регистрации пользователя.');
     } else {
+      if (result.message === 'User already exists') {
+        ctx.reply('Вы уже зарегистрированы.');
+      } else {
         ctx.reply('Вы успешно зарегистрированы!');
+      }
     }
-  })
+  });
 })
 
 bot.command('test', async (ctx) => {
@@ -89,31 +93,154 @@ bot.command('top', async (ctx) => {
 })
 
 bot.command('help', async (ctx) => {
-  const username = ctx.from.username
-  
-  let info = `Список доступных команд:
-  /register - Зарегистрироваться
-  /top10 - Топ 10 фильмов на данный момент`
+  const username = ctx.from.username;
 
-  if (User.get_user_status(username) == 'admin') {
+  User.get_user_status(username, (err, status) => {
+    if (err) {
+      console.error(err);
+      ctx.reply('Произошла ошибка при получении статуса пользователя');
+      return;
+    }
+
     let info = `Список доступных команд:
     /register - Зарегистрироваться
-    /top10 - Топ 10 фильмов на данный момент
-    /users - Выводит список всех пользователей`
-  }
-  ctx.reply(info)
-})
+    /top10 - Топ 10 фильмов на данный момент`;
+
+    if (status === 'admin') {
+      info += `
+    /users - Выводит список всех пользователей
+    /setstatus - Изменяет статус пользователя`;
+    }
+
+    ctx.reply(info);
+  });
+});
+
 
 bot.command('users', async (ctx) => {
-  const username = ctx.from.username
+  const username = ctx.from.username;
 
-  if (User.get_user_status(username) == 'admin'){
+  User.get_user_status(username, (err, status) => {
+    if (err) {
+      console.error(err);
+      ctx.reply('Произошла ошибка при получении статуса пользователя');
+      return;
+    }
 
-  }
-  else {
-    ctx.reply('Вы не имеете доступ к данной команде')
-  }
-})
+    if (status === 'admin') {
+      // Получаем список всех пользователей
+      db.all('SELECT username, status FROM users', (err, rows) => {
+        if (err) {
+          console.error(err);
+          ctx.reply('Произошла ошибка при получении списка пользователей');
+          return;
+        }
+
+        // Формируем сообщение с информацией о пользователях
+        let message = 'Список пользователей:\n\n';
+        rows.forEach((row) => {
+          message += `Имя: ${row.username}\nСтатус: ${row.status}\n\n`;
+        });
+
+        ctx.reply(message);
+      });
+    } else {
+      ctx.reply('Вы не имеете доступ к данной команде');
+    }
+  });
+});
+
+
+bot.command('setstatus', async (ctx) => {
+  const username = ctx.from.username;
+
+  User.get_user_status(username, (err, status) => {
+    if (err) {
+      console.error(err);
+      ctx.reply('Произошла ошибка при получении статуса пользователя');
+      return;
+    }
+
+    if (status === 'admin') {
+      // Получаем список всех пользователей
+      db.all('SELECT username, status FROM users', (err, rows) => {
+        if (err) {
+          console.error(err);
+          ctx.reply('Произошла ошибка при получении списка пользователей');
+          return;
+        }
+
+        // Формируем сообщение с информацией о пользователях
+        let message = 'Список пользователей:\n\n';
+        rows.forEach((row) => {
+          message += `Имя: ${row.username}\nСтатус: ${row.status}\n\n`;
+        });
+
+        ctx.reply(message, Markup.inlineKeyboard([
+          Markup.button.callback('Изменить статус', 'change_status')
+        ]));
+      });
+    } else {
+      ctx.reply('Вы не имеете доступ к данной команде');
+    }
+  });
+});
+
+bot.action('change_status', async (ctx) => {
+  const username = ctx.from.username;
+
+  // Получаем список пользователей
+  db.all('SELECT username, status FROM users', (err, rows) => {
+    if (err) {
+      console.error(err);
+      ctx.reply('Произошла ошибка при получении списка пользователей');
+      return;
+    }
+
+    // Формируем сообщение с вариантами статусов
+    let message = 'Выберите пользователя для изменения статуса:\n\n';
+    const buttons = [];
+    rows.forEach((row) => {
+      if (row.username !== username) {
+        buttons.push(Markup.button.callback(`${row.username} (${row.status})`, `set_status_${row.username}`));
+      }
+    });
+
+    ctx.reply(message, Markup.inlineKeyboard(buttons));
+  });
+});
+
+bot.action(/set_status_(.+)/, async (ctx) => {
+  const username = ctx.match[1];
+
+  // Получаем текущий статус пользователя
+  User.get_user_status(username, (err, currentStatus) => {
+    if (err) {
+      console.error(err);
+      ctx.reply('Произошла ошибка при получении статуса пользователя');
+      return;
+    }
+
+    // Определяем новый статус
+    let newStatus;
+    if (currentStatus === 'admin') {
+      newStatus = 'user';
+    } else {
+      newStatus = 'admin';
+    }
+
+    // Изменяем статус пользователя
+    User.set_user_status(username, newStatus, (err, result) => {
+      if (err) {
+        console.error(err);
+        ctx.reply('Произошла ошибка при изменении статуса пользователя');
+        return;
+      }
+
+      ctx.reply(`Статус пользователя ${username} изменен на '${newStatus}'`);
+    });
+  });
+});
+
 
 bot.launch()
-
