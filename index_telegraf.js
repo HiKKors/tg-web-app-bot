@@ -17,6 +17,12 @@ const test_url = 'https://my-json-server.typicode.com/typicode/demo/db'
 
 const bot = new Telegraf(token)
 
+
+
+function is_superuser(username) {
+  let status = User.get_user_status(username)
+  return status
+}
 // поиск фильма по названию
 bot.command('start', (ctx) => {
   ctx.reply(
@@ -54,7 +60,8 @@ bot.command('test', async (ctx) => {
     },
   });
   const respData = await data.json();
-  ctx.reply(JSON.stringify(respData.docs[0].description))
+  // ctx.reply(JSON.stringify(respData.docs[0].description))
+  ctx.reply(username)
 })
 
 // топ фильмов
@@ -78,6 +85,33 @@ bot.command('top', async (ctx) => {
 Описание: ${JSON.stringify(movie_info.description)}`
   for (let i = 0; i < 5; i++){
     ctx.reply(string_info)
+  }
+})
+
+bot.command('help', async (ctx) => {
+  const username = ctx.from.username
+  
+  let info = `Список доступных команд:
+  /register - Зарегистрироваться
+  /top10 - Топ 10 фильмов на данный момент`
+
+  if (User.get_user_status(username) == 'admin') {
+    let info = `Список доступных команд:
+    /register - Зарегистрироваться
+    /top10 - Топ 10 фильмов на данный момент
+    /users - Выводит список всех пользователей`
+  }
+  ctx.reply(info)
+})
+
+bot.command('users', async (ctx) => {
+  const username = ctx.from.username
+
+  if (User.get_user_status(username) == 'admin'){
+
+  }
+  else {
+    ctx.reply('Вы не имеете доступ к данной команде')
   }
 })
 

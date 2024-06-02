@@ -20,10 +20,18 @@ class User {
         db.get('SELECT * FROM users WHERE id = ?', id, cb)
     }
 
+    static get_user_status(username, cb) {
+        db.get('SELECT status FROM users WHERE username = ?', username, cb)
+    }
+
     static create_user(data, cb) {
         const sql = 'INSERT INTO users(first_name, last_name, username, status) VALUES (?, ?, ?, ?)'
         db.run(sql, data.first_name, data.last_name, data.username, data.status, cb)
     }
+
+    // static update_status(username, cb) {
+    //     const sql_update = 'UPDATE users'
+    // }
 }
 
 // экспорт всей бд и таблицы пользователей
@@ -31,21 +39,3 @@ class User {
 // module.exports.User = User
 export { db, User };
 
-// import sqlite3 from 'sqlite3';
-// const db = new sqlite3.Database(':memory:');
-
-// db.serialize(() => {
-//     db.run("CREATE TABLE lorem (info TEXT)");
-
-//     const stmt = db.prepare("INSERT INTO lorem VALUES (?)");
-//     for (let i = 0; i < 10; i++) {
-//         stmt.run("Ipsum " + i);
-//     }
-//     stmt.finalize();
-
-//     db.each("SELECT rowid AS id, info FROM lorem", (err, row) => {
-//         console.log(row.id + ": " + row.info);
-//     });
-// });
-
-// db.close();
